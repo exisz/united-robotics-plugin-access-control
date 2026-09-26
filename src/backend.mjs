@@ -1,12 +1,11 @@
-import {readFile} from 'node:fs/promises';
 import {summarize,updatePolicy} from './policy.mjs';
-// Deployment must explicitly provision this dedicated read-only secret.
-// Never read the complete instance secret store or plugin-data for credentials.
-const secretPath='/run/secrets/capital-access-control.json';
+// The instance Secret Manager injects only the declared token into this process.
+// Account/application/policy identifiers are public configuration, not credentials.
+const accountId='a13429beb138043df35e2a9162f1b095';
 export async function dispatch(method,input,options={}){
   if(!['access.read','access.update'].includes(method))throw Error('不支持的操作');
-  let credentials;
-  try{credentials=options.credentials??JSON.parse(await readFile(secretPath,'utf8'));}catch{throw Error('本地运行器尚未配置此插件的专用凭据');}
+  const credentials=options.credentials??{accountId,token:process.env.CLOUDFLARE_ACCESS_TOKEN};
+  if(!credentials.token)throw Error('请在 Settings 的 Connector secrets 中配置 Cloudflare Access 凭据');
   if(!/^[a-f0-9]{32}$/.test(credentials.accountId)||typeof credentials.token!=='string'||!credentials.token)throw Error('插件专用凭据无效');
   const url=`https://api.cloudflare.com/client/v4/accounts/${credentials.accountId}/access/apps/3534f755-aa33-4a89-b46e-3188465c177d/policies/86e572c9-33e5-4ef4-8772-b50743ba0c83`;
   const cf=async(method='GET',body)=>{

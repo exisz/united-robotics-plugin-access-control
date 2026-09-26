@@ -1,6 +1,3 @@
-// src/backend.mjs
-import { readFile } from "node:fs/promises";
-
 // src/policy.mjs
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
@@ -23,15 +20,11 @@ function updatePolicy(policy, input) {
 }
 
 // src/backend.mjs
-var secretPath = "/run/secrets/capital-access-control.json";
+var accountId = "a13429beb138043df35e2a9162f1b095";
 async function dispatch(method, input, options = {}) {
   if (!["access.read", "access.update"].includes(method)) throw Error("\u4E0D\u652F\u6301\u7684\u64CD\u4F5C");
-  let credentials;
-  try {
-    credentials = options.credentials ?? JSON.parse(await readFile(secretPath, "utf8"));
-  } catch {
-    throw Error("\u672C\u5730\u8FD0\u884C\u5668\u5C1A\u672A\u914D\u7F6E\u6B64\u63D2\u4EF6\u7684\u4E13\u7528\u51ED\u636E");
-  }
+  const credentials = options.credentials ?? { accountId, token: process.env.CLOUDFLARE_ACCESS_TOKEN };
+  if (!credentials.token) throw Error("\u8BF7\u5728 Settings \u7684 Connector secrets \u4E2D\u914D\u7F6E Cloudflare Access \u51ED\u636E");
   if (!/^[a-f0-9]{32}$/.test(credentials.accountId) || typeof credentials.token !== "string" || !credentials.token) throw Error("\u63D2\u4EF6\u4E13\u7528\u51ED\u636E\u65E0\u6548");
   const url = `https://api.cloudflare.com/client/v4/accounts/${credentials.accountId}/access/apps/3534f755-aa33-4a89-b46e-3188465c177d/policies/86e572c9-33e5-4ef4-8772-b50743ba0c83`;
   const cf = async (method2 = "GET", body) => {
