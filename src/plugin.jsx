@@ -5,14 +5,14 @@ import themeCSS from '@radix-ui/themes/styles.css';
 import css from './plugin.css';
 export const windows=[{id:'access',title:'网络 IP 管理'}];
 const names=new Intl.DisplayNames(['zh-CN'],{type:'region'});
-export function AccessPanel({invoke}){
+export function AccessPanel({invoke,appearance='light'}){
   const [data,setData]=useState(null),[countries,setCountries]=useState([]),[ips,setIps]=useState([]),[country,setCountry]=useState(''),[ip,setIp]=useState(''),[busy,setBusy]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState('');
   function accept(value){if(!value||!Array.isArray(value.countries)||!Array.isArray(value.ips)||typeof value.revision!=='string')throw Error('服务器返回格式无效');setData(value);setCountries(value.countries);setIps(value.ips);}
   useEffect(()=>{let live=true;invoke('access.read',{}).then(v=>{if(live)accept(v);}).catch(e=>{if(live)setError(e.message);}).finally(()=>{if(live)setBusy(false);});return()=>{live=false;};},[invoke]);
   async function run(save){setBusy(true);setError('');setNotice('');try{accept(await invoke(save?'access.update':'access.read',save?{revision:data.revision,countries,ips}:{}));setNotice(save?'已保存，并从 Cloudflare 读回确认':'已刷新当前生效规则');}catch(e){setError(e.message);}finally{setBusy(false);}}
   const dirty=data&&(JSON.stringify(countries)!==JSON.stringify(data.countries)||JSON.stringify(ips)!==JSON.stringify(data.ips));
   function addCountry(){const value=country.trim().toUpperCase();if(!/^[A-Z]{2}$/.test(value)){setError('请输入两位国家代码，例如 CN');return;}setCountries([...new Set([...countries,value])]);setCountry('');setError('');}
-  return <Theme accentColor="jade" grayColor="sage" radius="large" appearance="inherit"><Box className="ur-access-shell"><Flex justify="between" align="center" gap="3"><Box><Text size="1" color="gray">CAPITAL · NETWORK ACCESS</Text><Heading size="5">网络 IP 管理</Heading></Box><Badge color={error?'red':busy?'gray':'jade'}>{busy?<><Spinner size="1"/>读取中</>:error?'读取 / 保存失败':dirty?'有未保存修改':'已同步'}</Badge></Flex><Text as="p" size="2" color="gray">管理 capital.unitedrobotics.app 的访问范围。Logto 登录要求保持不变。</Text>
+  return <Theme accentColor="jade" grayColor="gray" radius="large" appearance={appearance}><Box className="ur-access-shell"><Flex justify="between" align="center" gap="3"><Box><Text size="1" color="gray">CAPITAL · NETWORK ACCESS</Text><Heading size="5">网络 IP 管理</Heading></Box><Badge color={error?'red':busy?'gray':'jade'}>{busy?<><Spinner size="1"/>读取中</>:error?'读取 / 保存失败':dirty?'有未保存修改':'已同步'}</Badge></Flex><Text as="p" size="2" color="gray">管理 capital.unitedrobotics.app 的访问范围。Logto 登录要求保持不变。</Text>
   {error&&<Callout.Root color="red" role="alert"><Callout.Text>{error}</Callout.Text></Callout.Root>}
   {notice&&<Callout.Root color="jade" role="status"><Callout.Text>{notice}</Callout.Text></Callout.Root>}
   {!data?<Card><Flex align="center" gap="3">{busy&&<Spinner/>}<Text>{busy?'正在读取 Cloudflare 当前规则…':'未能读取当前规则；不会将空白视为没有限制。'}</Text></Flex></Card>:<>
@@ -20,4 +20,21 @@ export function AccessPanel({invoke}){
   <Card><Flex justify="between"><Heading size="3">允许的公网 IP / CIDR</Heading><Badge variant="soft">{ips.length} 条</Badge></Flex><Flex direction="column" gap="2" my="3">{ips.length?ips.map(value=><Flex key={value} justify="between" align="center"><Text className="ur-access-ip">{value}</Text><Button variant="ghost" color="red" disabled={busy} onClick={()=>setIps(ips.filter(p=>p!==value))}>移除</Button></Flex>):<Text size="2" color="gray">当前没有单独的 IP 规则</Text>}</Flex><Flex gap="2"><TextField.Root aria-label="公网 IP 或 CIDR" placeholder="例如 203.0.113.8 或 203.0.113.0/24" value={ip} disabled={busy} style={{flex:1}} onChange={e=>setIp(e.target.value)}/><Button variant="soft" disabled={busy||!ip.trim()} onClick={()=>{setIps([...new Set([...ips,ip.trim()])]);setIp('');}}>添加 IP</Button></Flex></Card></>}
   <Callout.Root color="gray"><Callout.Text>国家与 IP 是“任一匹配”放行。保留 CN / AU 时，这两个国家内的动态 IP 无需逐个添加。保存仍保留现有登录条件。</Callout.Text></Callout.Root><Flex justify="between" align="center" gap="3"><Button variant="soft" disabled={busy} onClick={()=>run(false)}>刷新当前值</Button><Button disabled={busy||!data||!dirty} onClick={()=>run(true)}>{busy&&<Spinner size="1"/>}保存规则</Button></Flex></Box></Theme>;
 }
-export function mount(root,context){if(context.props?.window&&context.props.window!=='access')throw Error('Unknown window');const style=document.createElement('style');style.textContent=themeCSS+'\n'+css;const container=document.createElement('div');root.append(style,container);const reactRoot=createRoot(container);reactRoot.render(<AccessPanel invoke={context.invoke}/>);return()=>{reactRoot.unmount();container.remove();style.remove();};}
+export function mount(root,context){
+  if(context.props?.window&&context.props.window!=='access')throw Error('Unknown window');
+  const host=document.createElement('div');
+  host.style.cssText='display:block;min-height:100%;background:var(--background,transparent)';
+  const shadow=host.attachShadow({mode:'open'});
+  const style=document.createElement('style');style.textContent=themeCSS+'\n'+css;
+  const container=document.createElement('div');shadow.append(style,container);root.append(host);
+  const reactRoot=createRoot(container);
+  const render=()=>{
+    const html=document.documentElement;
+    const appearance=html.dataset.theme==='dark'||(!html.dataset.theme&&getComputedStyle(html).colorScheme==='dark')?'dark':'light';
+    reactRoot.render(<AccessPanel invoke={context.invoke} appearance={appearance}/>);
+  };
+  const observer=new MutationObserver(render);
+  observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','class','style']});
+  render();
+  return()=>{observer.disconnect();reactRoot.unmount();host.remove();};
+}

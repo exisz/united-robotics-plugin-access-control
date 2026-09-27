@@ -1,1 +1,11 @@
-.ur-access-shell{box-sizing:border-box;display:grid;gap:16px;padding:20px;min-width:260px;max-width:880px;margin:auto;color:var(--foreground,var(--gray-12));background:var(--background,transparent)}.ur-access-shell *{box-sizing:border-box}.ur-access-shell p{margin:0}.ur-access-ip{font-family:ui-monospace,monospace;font-size:13px}.ur-access-shell .rt-Card{padding:16px}.ur-access-shell .rt-TextFieldRoot{min-width:0}.ur-access-shell button{cursor:pointer}.ur-access-shell button:disabled{cursor:default}@media(max-width:480px){.ur-access-shell{padding:12px;gap:12px}.ur-access-shell .rt-Card{padding:12px}}
+:host{display:block;min-height:100%}
+.radix-themes{min-height:100%;color:var(--foreground,var(--gray-12));background:var(--background,var(--color-background));font-family:system-ui,sans-serif}
+.ur-access-shell{box-sizing:border-box;display:grid;gap:16px;padding:24px;min-width:0;max-width:880px;margin:auto}
+.ur-access-shell *{box-sizing:border-box}
+.ur-access-shell p{margin:0}
+.ur-access-ip{font-family:ui-monospace,monospace;font-size:13px;overflow-wrap:anywhere}
+.ur-access-shell .rt-Card{padding:20px;background:var(--card,var(--gray-2));color:var(--card-foreground,var(--gray-12));box-shadow:inset 0 0 0 1px var(--border,var(--gray-6))}
+.ur-access-shell .rt-TextFieldRoot{min-width:0}
+.ur-access-shell button{cursor:pointer;flex-shrink:0}
+.ur-access-shell button:disabled{cursor:default}
+@media(max-width:480px){.ur-access-shell{padding:12px;gap:12px}.ur-access-shell .rt-Card{padding:14px}}

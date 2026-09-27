@@ -13,4 +13,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/test-browser.mjs
       - run: git diff --exit-code -- dist

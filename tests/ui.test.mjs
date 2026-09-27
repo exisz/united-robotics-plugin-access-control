@@ -7,15 +7,17 @@ globalThis.ResizeObserver=class{observe(){}unobserve(){}disconnect(){}};
 const {mount}=await import('../dist/plugin.js');
 const tick=()=>new Promise(r=>setTimeout(r,25));
 async function until(predicate){for(let n=0;n<80;n++){if(predicate())return;await tick();}assert.fail('UI did not reach expected state');}
-const root=document.getElementById('root');
+const mountRoot=document.getElementById('root');
+const root={querySelector:(s)=>mountRoot.firstChild.shadowRoot.querySelector(s),querySelectorAll:(s)=>mountRoot.firstChild.shadowRoot.querySelectorAll(s),get textContent(){return mountRoot.firstChild.shadowRoot.textContent;}};
 const button=text=>[...root.querySelectorAll('button')].find(x=>x.textContent.includes(text));
 test('shows live AU/CN using styled components; save failure retains draft; cleanup',async()=>{
-  const calls=[];const cleanup=mount(root,{props:{window:'access'},invoke:async(method,input)=>{calls.push({method,input});if(method==='access.update')throw Error('Synthetic write failure');return {countries:['AU','CN'],ips:[],revision:'r1'};}});
+  const calls=[];const cleanup=mount(mountRoot,{props:{window:'access'},invoke:async(method,input)=>{calls.push({method,input});if(method==='access.update')throw Error('Synthetic write failure');return {countries:['AU','CN'],ips:[],revision:'r1'};}});
   await until(()=>root.textContent.includes('澳大利亚'));
-  assert.match(root.textContent,/中国/);assert.ok(root.querySelector('.rt-Card'));assert.ok(root.querySelector('style').textContent.length>1000);assert.equal(button('保存规则').disabled,true);
+  assert.match(root.textContent,/中国/);
+  document.documentElement.dataset.theme='dark';await until(()=>root.querySelector('.radix-themes.dark'));assert.ok(root.querySelector('.rt-Card'));assert.ok(root.querySelector('style').textContent.length>1000);assert.equal(button('保存规则').disabled,true);
   root.querySelector('[aria-label="移除 CN"]').click();await tick();assert.equal(button('保存规则').disabled,false);button('保存规则').click();
-  await until(()=>root.textContent.includes('Synthetic write failure'));assert.deepEqual(calls.at(-1).input.countries,['AU']);assert.equal(root.querySelector('[aria-label="移除 CN"]'),null);cleanup();assert.equal(root.childNodes.length,0);
+  await until(()=>root.textContent.includes('Synthetic write failure'));assert.deepEqual(calls.at(-1).input.countries,['AU']);assert.equal(root.querySelector('[aria-label="移除 CN"]'),null);cleanup();assert.equal(mountRoot.childNodes.length,0);
 });
 test('failed initial read never shows fake defaults and cannot save',async()=>{
-  const cleanup=mount(root,{props:{},invoke:async()=>{throw Error('Synthetic read failure');}});await until(()=>root.textContent.includes('Synthetic read failure'));assert.equal(button('保存规则').disabled,true);assert.equal(root.querySelector('[aria-label="移除 AU"]'),null);cleanup();
+  const cleanup=mount(mountRoot,{props:{},invoke:async()=>{throw Error('Synthetic read failure');}});await until(()=>root.textContent.includes('Synthetic read failure'));assert.equal(button('保存规则').disabled,true);assert.equal(root.querySelector('[aria-label="移除 AU"]'),null);cleanup();
 });
