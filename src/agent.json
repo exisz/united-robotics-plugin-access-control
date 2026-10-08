@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "methods": {
+    "access.read": {
+      "description": "Read the Cloudflare Access allow policy for Capital: allowed country codes, IPs/CIDRs and the current revision.",
+      "params": {
+        "type": "object",
+        "additionalProperties": false
+      }
+    },
+    "access.update": {
+      "description": "Replace the allowed countries and IPs. Pass the revision from access.read; at least one country or IP must remain. Changes who can reach Capital, so confirm with the user first.",
+      "params": {
+        "type": "object",
+        "required": [
+          "revision",
+          "countries",
+          "ips"
+        ],
+        "properties": {
+          "revision": {
+            "type": "string"
+          },
+          "countries": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "ISO 3166 two-letter code"
+            }
+          },
+          "ips": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "IPv4/IPv6 address or CIDR"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "writes": true
+    }
+  }
+}
